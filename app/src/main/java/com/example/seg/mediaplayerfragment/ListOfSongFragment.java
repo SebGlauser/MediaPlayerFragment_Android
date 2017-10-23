@@ -24,9 +24,6 @@ import java.util.List;
  */
 public class ListOfSongFragment extends Fragment {
 
-    public ListOfSongFragment() {
-    }
-
     private RecyclerView mRecyclerView;
     private RecyclerView.LayoutManager mLayoutManager;
     private SongListRecyclerViewAdapter mSongListAdapter;
@@ -34,6 +31,10 @@ public class ListOfSongFragment extends Fragment {
     private List<Song> mSongList = SongListSingleton.getInstance();
     private Context mOwner;
     OnSongSelectedListener mCallback;
+
+
+    public ListOfSongFragment() {
+    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -100,8 +101,8 @@ public class ListOfSongFragment extends Fragment {
     @Override
     public void onAttach(Context activity) {
         super.onAttach(activity);
+        mOwner = activity;
         try {
-            mOwner = activity;
             mCallback = (OnSongSelectedListener) activity;
         } catch (ClassCastException e) {
             e.printStackTrace();
@@ -116,11 +117,16 @@ public class ListOfSongFragment extends Fragment {
         mCallback = null;
     }
 
+    /**
+     * This function update this fragment with {@link SongListSingleton}
+     */
     public void commitListHasBeenUpdated() {
         mSongListAdapter.notifyDataSetChanged();
     }
 
-    // Container Activity must implement this interface
+    /**
+     * {@link interface} Used to call back the owner of this fragment when a song is selected
+     */
     public interface OnSongSelectedListener {
         public void onSongSelected(int position);
     }

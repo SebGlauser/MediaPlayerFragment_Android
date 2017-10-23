@@ -377,7 +377,7 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
             } else {
                 StartSongInformationFragment(position);
             }
-        } catch (Exception e) {
+        } catch (ClassCastException e) {
             StartSongInformationFragment(position);
         }
     }

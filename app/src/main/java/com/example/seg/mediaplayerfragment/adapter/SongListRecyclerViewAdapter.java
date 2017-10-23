@@ -43,8 +43,7 @@ public class SongListRecyclerViewAdapter extends RecyclerView.Adapter<SongListRe
         // Get back the song on fx of the position
         Song song = songsList.get(position);
 
-        // Create a format for the duration
-        // @// TODO: 20.10.17 Manage more than 1h durations
+
         SimpleDateFormat sdf = new SimpleDateFormat("mm:ss");
 
         // Fill the layout
