@@ -11,6 +11,9 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -21,6 +24,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.seg.mediaplayerfragment.Singletons.MediaPlayerSingleton;
 import com.example.seg.mediaplayerfragment.Singletons.SongListSingleton;
@@ -31,8 +35,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity implements ListOfSongFragment.OnSongSelectedListener{
-    private static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 100;
+public class MainActivity extends AppCompatActivity implements ListOfSongFragment.OnSongSelectedListener {
+    private static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 123;
 
     private List<Song> mSongList = SongListSingleton.getInstance();
     private MediaPlayer mMediaPlayer = MediaPlayerSingleton.getInstance();
@@ -67,30 +71,27 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
 
         setListeners();
 
-        // Check that the activity is using the layout version with
-        // the fragment_container FrameLayout
-        if (findViewById(R.id.container_fragment) != null) {
+        requestInternalPermission();
 
-            // However, if we're being restored from a previous state,
-            // then we don't need to do anything and should return or else
-            // we could end up with overlapping fragments.
+
+        if (findViewById(R.id.container_fragment) != null) {
             if (savedInstanceState != null) {
                 return;
             }
-
-            // Create a new Fragment to be placed in the activity layout
             ListOfSongFragment firstFragment = new ListOfSongFragment();
-
-            // In case this activity was started with special instructions from an
-            // Intent, pass the Intent's extras to the fragment as arguments
-            firstFragment.setArguments(getIntent().getExtras());
-
-            // Add the fragment to the 'fragment_container' FrameLayout
             getSupportFragmentManager().beginTransaction()
                     .add(R.id.container_fragment, firstFragment).commit();
         }
 
-        requestInternalPermission();
+        // Start the async task
+        mSeekBarAsyncUpdater = new SeekBarAsyncTaskRunner();
+        mSeekBarAsyncUpdater.execute();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mSeekBarAsyncUpdater.cancel(true);
     }
 
     /**
@@ -103,6 +104,7 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
             public void onCompletion(MediaPlayer mp) {
                 if (mCurrentSongIndex < mSongList.size() - 1) {
                     mCurrentSongIndex++;
+                    commitSongChanged(mCurrentSongIndex);
                     startSong();
                 }
             }
@@ -112,8 +114,15 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
         seekProgress.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (isTracking)
-                    mMediaPlayer.seekTo(progress);
+                if (isTracking && mMediaPlayer != null) {
+
+                    if (mMediaPlayer.getDuration() > 0) {
+                        seekProgress.setMax(mMediaPlayer.getDuration());
+                        if (mMediaPlayer.isPlaying()) {
+                            mMediaPlayer.seekTo(progress);
+                        }
+                    }
+                }
             }
 
             // Without this lock the player bug every time we set the position
@@ -134,7 +143,9 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
             public void onClick(View v) {
                 if (mCurrentSongIndex < mSongList.size() - 1) {
                     mCurrentSongIndex++;
-                    startSong();
+                    commitSongChanged(mCurrentSongIndex);
+                    if (!isPaused)
+                        startSong();
                 }
             }
         });
@@ -145,7 +156,9 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
             public void onClick(View v) {
                 if (mCurrentSongIndex > 1) {
                     mCurrentSongIndex--;
-                    startSong();
+                    commitSongChanged(mCurrentSongIndex);
+                    if (!isPaused)
+                        startSong();
                 }
 
             }
@@ -169,11 +182,16 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
      */
     public void startSong() {
         // get back the current song
-        Song song = mSongList.get(mCurrentSongIndex);
+        Song song = getSongFromIndex();
 
-        // Create a format to print the time
-        //@// TODO Update fragment
-        SimpleDateFormat sdf = new SimpleDateFormat("mm:ss");
+        if (song == null)
+            return;
+        SimpleDateFormat sdf;
+        if (song.getDuration() < 3600000) {
+            sdf = new SimpleDateFormat("mm:ss");
+        } else {
+            sdf = new SimpleDateFormat("hh:mm:ss");
+        }
 
         duration.setText(sdf.format(new Date(song.getDuration())));
         timeProgression.setText(sdf.format(new Date(0)));
@@ -196,6 +214,16 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
         // Change the state and the button
         isPaused = false;
         play_pause_btn.setImageResource(R.drawable.ic_pause_black_24dp);
+    }
+
+    private Song getSongFromIndex() {
+        Song song = null;
+        try {
+            song = mSongList.get(mCurrentSongIndex);
+        } catch (IndexOutOfBoundsException e) {
+            e.printStackTrace();
+        }
+        return song;
     }
 
     /**
@@ -249,23 +277,42 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
      */
     @RequiresApi(api = Build.VERSION_CODES.M)
     private void requestInternalPermission() {
-        // If the application has not access to the internal storage send a request
-        if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE)
+
+        // Here, thisActivity is the current activity
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
 
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+            // Should we show an explanation?
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
 
+            } else {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
+            }
         } else {
-            // The application seems to have internal access
-
-            // Populate the song
-            SongListSingleton.populate(this);
-
-            // Start the async task
-            mSeekBarAsyncUpdater = new SeekBarAsyncTaskRunner();
-            mSeekBarAsyncUpdater.execute();
+            onStoragePermissionGranted();
         }
+    }
+
+    /**
+     * This function should be called only when the storage permission is granted
+     */
+    private void onStoragePermissionGranted() {
+        SongListSingleton.populate(this);
+
+        // Note that it's possible the fragment has been loaded before the list has been populated
+        // If that's the case we need to commit that the list has been updated
+        ListOfSongFragment songFragment = (ListOfSongFragment)
+                getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+
+        // if fragment is already loaded.
+        if (songFragment != null) {
+            songFragment.commitListHasBeenUpdated();
+        }
+
     }
 
     /**
@@ -274,26 +321,65 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            String permissions[], int[] grantResults) {
-        switch (requestCode) {
-            case MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE: {
-                // If request is cancelled, the result arrays are empty.
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    SongListSingleton.populate(this);
-                    mSeekBarAsyncUpdater = new SeekBarAsyncTaskRunner();
-                    mSeekBarAsyncUpdater.execute();
-                } else {
 
-                }
-                return;
+        if (requestCode == MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE) {
+
+            // If request is cancelled, the result arrays are empty.
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                onStoragePermissionGranted();
+            } else {
+
             }
+            return;
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         }
     }
 
+    /**
+     * Callback from the list fragment
+     */
     @Override
     public void onSongSelected(int position) {
         mCurrentSongIndex = position;
         startSong();
+        StartSongInformationFragment(position);
+    }
+
+    /**
+     * This function start the fragment Song information and add it to the stack
+     */
+    private void StartSongInformationFragment(int position) {
+        SongInformationFragment fragment = SongInformationFragment.newInstance(position);
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+
+        // Replace whatever is in the fragment_container view with this fragment,
+        // and add the transaction to the back stack so the user can navigate back
+        transaction.replace(R.id.container_fragment, fragment);
+        transaction.addToBackStack(null);
+
+        // Commit the transaction
+        transaction.commit();
+    }
+
+    /**
+     * This function update the fragment Song information
+     */
+    public void commitSongChanged(int position) {
+        // Try to cast if this is not possible to cast that's mean the fragment has not be created
+        try {
+            SongInformationFragment articleFrag = (SongInformationFragment)
+                    getSupportFragmentManager().findFragmentById(R.id.container_fragment);
+            // if Fragment found
+            if (articleFrag != null) {
+                articleFrag.updateSongView(position);
+            } else {
+                StartSongInformationFragment(position);
+            }
+        } catch (Exception e) {
+            StartSongInformationFragment(position);
+        }
     }
 
     /**
@@ -322,7 +408,12 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
         protected void onProgressUpdate(Integer... progress) {
             if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
                 // Update the view
-                SimpleDateFormat sdf = new SimpleDateFormat("mm:ss");
+                SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss");
+
+                if (mMediaPlayer.getDuration() < 3600000) {
+                    sdf = new SimpleDateFormat("mm:ss");
+                }
+
                 int mediaPos_new = mMediaPlayer.getCurrentPosition();
                 int mediaMax_new = mMediaPlayer.getDuration();
                 seekProgress.setMax(mediaMax_new);

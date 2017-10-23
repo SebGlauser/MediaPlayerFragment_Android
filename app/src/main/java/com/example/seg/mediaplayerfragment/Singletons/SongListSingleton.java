@@ -12,9 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @Author Sebastien Glauser
+ * This singleton contain the list of song
+ *
+ * @author Sebastien Glauser
  * @date 20.10.2017
- * @brief This singleton contain the list of song
  */
 
 public class SongListSingleton {
@@ -23,8 +24,9 @@ public class SongListSingleton {
 
 
     /**
+     * This function is used to return the list of song
+     *
      * @return The list of song
-     * @breif This function is used to return the list of song
      */
     public static List<Song> getInstance() {
         return mSongList;

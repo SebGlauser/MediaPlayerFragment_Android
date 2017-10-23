@@ -7,10 +7,11 @@ import com.example.seg.mediaplayerfragment.Singletons.AlbumCoverListSingleton;
 
 
 /**
+ * This class is used to instantiate a song
+ *
  * @author Sebastien Glauser
  * @version 1.0.0
  * @since 18.10.2017
- * @brief This class is used to instantiate a song
  */
 
 public class Song {
@@ -23,6 +24,8 @@ public class Song {
     private Long duration;      ///< The duration in ms
 
     /**
+     * Constructor
+     *
      * @param context  The context used to send to the AlbumCoverListSingleton
      * @param id       The id of the song
      * @param album_id Used to get back the cover
@@ -43,7 +46,7 @@ public class Song {
 
     /**
      * @return name The title of the song
-     * @brief get the title of the song
+     * get the title of the song
      */
     public String getName() {
         return name;
@@ -51,7 +54,7 @@ public class Song {
 
     /**
      * @param name The title of the song
-     * @brief Set the name
+     *             Set the name
      */
     public void setName(String name) {
         this.name = name;
@@ -59,7 +62,7 @@ public class Song {
 
     /**
      * @return The author of the song
-     * @brief get the author of the song
+     * get the author of the song
      */
     public String getAuthor() {
         return author;
@@ -67,7 +70,7 @@ public class Song {
 
     /**
      * @param author The author of this title
-     * @brief Set the
+     *               Set the
      */
     public void setAuthor(String author) {
         this.author = author;
@@ -75,7 +78,7 @@ public class Song {
 
     /**
      * @return name The id of the song
-     * @brief get the id of the song
+     * get the id of the song
      */
     public Long getId() {
         return id;
@@ -83,7 +86,7 @@ public class Song {
 
     /**
      * @param id The id of the song
-     * @brief Set the id of the song
+     *           Set the id of the song
      */
     public void setId(Long id) {
         this.id = id;
@@ -91,7 +94,7 @@ public class Song {
 
     /**
      * @return The album cover note that if there is no cover this function will return NULL
-     * @brief Return the cover in Bitmap
+     * Return the cover in Bitmap
      */
     public Bitmap getAlbumart() {
         return AlbumCoverListSingleton.getBitmap(context, album_id);
@@ -99,7 +102,7 @@ public class Song {
 
     /**
      * @return The path of the song
-     * @brief get the path of the song
+     * get the path of the song
      */
     public String getPath() {
         return path;
@@ -107,7 +110,7 @@ public class Song {
 
     /**
      * @param path The path of the song
-     * @brief Set the path
+     *             Set the path
      */
     public void setPath(String path) {
         this.path = path;
@@ -115,7 +118,7 @@ public class Song {
 
     /**
      * @return The duration of the song
-     * @brief get the duration of the song
+     * get the duration of the song
      */
     public Long getDuration() {
         return duration;
@@ -123,7 +126,7 @@ public class Song {
 
     /**
      * @param duration The duration in ms
-     * @brief Set the duration
+     *                 Set the duration
      */
     public void setDuration(Long duration) {
         this.duration = duration;

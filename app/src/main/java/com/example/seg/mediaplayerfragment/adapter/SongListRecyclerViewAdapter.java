@@ -15,13 +15,14 @@ import java.util.Date;
 import java.util.List;
 
 /**
+ * The recycler adapter of a list of song
+ *
  * @author Sebastien Glauser
  * @version 1.0.0
  * @since 18.10.2017
- * @brief The recycler adapter of a list of song
  */
 
-public class SongListRecyclerViewAdapter extends RecyclerView.Adapter<SongListRecyclerViewAdapter.ViewHolder>{
+public class SongListRecyclerViewAdapter extends RecyclerView.Adapter<SongListRecyclerViewAdapter.ViewHolder> {
     private List<Song> songsList;
 
     public SongListRecyclerViewAdapter(List<Song> songsList) {
@@ -49,7 +50,7 @@ public class SongListRecyclerViewAdapter extends RecyclerView.Adapter<SongListRe
         // Fill the layout
         holder.title.setText(song.getName());
         holder.artist.setText(song.getAuthor());
-        if( song.getAlbumart() != null )
+        if (song.getAlbumart() != null)
             holder.img.setImageBitmap(song.getAlbumart());
         else
             holder.img.setImageResource(R.drawable.ic_music_note_black_24dp);

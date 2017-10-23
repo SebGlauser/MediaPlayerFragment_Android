@@ -20,11 +20,12 @@ import com.example.seg.mediaplayerfragment.objects.Song;
 import java.util.List;
 
 /**
- *@
+ *
  */
 public class ListOfSongFragment extends Fragment {
 
-    public ListOfSongFragment(){}
+    public ListOfSongFragment() {
+    }
 
     private RecyclerView mRecyclerView;
     private RecyclerView.LayoutManager mLayoutManager;
@@ -41,13 +42,13 @@ public class ListOfSongFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_list_of_song, container, false);
 
         // Avoid have an null pointer
-        if( mOwner == null ){
+        if (mOwner == null) {
             return view;
         }
 
         // get the view
         mRecyclerView = view.findViewById(R.id.my_recycler_view);
-        if( mRecyclerView == null ){
+        if (mRecyclerView == null) {
             return view;
         }
 
@@ -74,7 +75,7 @@ public class ListOfSongFragment extends Fragment {
                 new RecyclerSongClickListener(getContext(), new RecyclerSongClickListener.OnItemClickListener() {
                     @Override
                     public void onItemClick(View view, int position) {
-                        if(mCallback != null) {
+                        if (mCallback != null) {
                             mCallback.onSongSelected(position);
                         }
                     }
@@ -92,7 +93,7 @@ public class ListOfSongFragment extends Fragment {
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState){
+    public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
     }
 
@@ -107,11 +108,16 @@ public class ListOfSongFragment extends Fragment {
             mCallback = null;
         }
     }
+
     @Override
     public void onDetach() {
         super.onDetach();
         mOwner = null;
         mCallback = null;
+    }
+
+    public void commitListHasBeenUpdated() {
+        mSongListAdapter.notifyDataSetChanged();
     }
 
     // Container Activity must implement this interface
