@@ -10,10 +10,12 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
@@ -34,6 +36,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements ListOfSongFragment.OnSongSelectedListener {
     private static final int MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE = 123;
@@ -177,6 +180,16 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
         });
     }
 
+    private Song getSongFromIndex() {
+        Song song = null;
+        try {
+            song = mSongList.get(mCurrentSongIndex);
+        } catch (IndexOutOfBoundsException e) {
+            e.printStackTrace();
+        }
+        return song;
+    }
+
     /**
      * This function start the song pointed by the mCurrentSongIndex and update information
      */
@@ -188,9 +201,9 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
             return;
         SimpleDateFormat sdf;
         if (song.getDuration() < 3600000) {
-            sdf = new SimpleDateFormat("mm:ss");
+            sdf = new SimpleDateFormat("mm:ss", Locale.getDefault());
         } else {
-            sdf = new SimpleDateFormat("hh:mm:ss");
+            sdf = new SimpleDateFormat("hh:mm:ss", Locale.getDefault());
         }
 
         duration.setText(sdf.format(new Date(song.getDuration())));
@@ -214,16 +227,6 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
         // Change the state and the button
         isPaused = false;
         play_pause_btn.setImageResource(R.drawable.ic_pause_black_24dp);
-    }
-
-    private Song getSongFromIndex() {
-        Song song = null;
-        try {
-            song = mSongList.get(mCurrentSongIndex);
-        } catch (IndexOutOfBoundsException e) {
-            e.printStackTrace();
-        }
-        return song;
     }
 
     /**
@@ -257,13 +260,16 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public void setStatusBarGradient(Activity activity) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getSupportActionBar().setBackgroundDrawable(new ColorDrawable(this.getResources().getColor(R.color.white30)));
+            ActionBar actionBar = getSupportActionBar();
+            if(actionBar != null) {
+                actionBar.setBackgroundDrawable(new ColorDrawable(ContextCompat.getColor(this, R.color.white30)));
+            }
             Window window = activity.getWindow();
             rootView.setBackgroundColor(0x00000000);
-            AnimationDrawable background = (AnimationDrawable) activity.getResources().getDrawable(R.drawable.annimation_list);
+            AnimationDrawable background = (AnimationDrawable) ContextCompat.getDrawable(this,R.drawable.annimation_list);
             window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(activity.getResources().getColor(R.color.white30));
-            window.setNavigationBarColor(activity.getResources().getColor(R.color.white30));
+            window.setStatusBarColor(ContextCompat.getColor(this,R.color.white30));
+            window.setNavigationBarColor(ContextCompat.getColor(this,R.color.white30));
             window.setBackgroundDrawable(background);
 
             background.setEnterFadeDuration(2000);
@@ -282,16 +288,10 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.READ_EXTERNAL_STORAGE)
                 != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
 
-            // Should we show an explanation?
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
-                    Manifest.permission.READ_EXTERNAL_STORAGE)) {
-
-            } else {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE);
-            }
         } else {
             onStoragePermissionGranted();
         }
@@ -320,20 +320,16 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
      */
     @Override
     public void onRequestPermissionsResult(int requestCode,
-                                           String permissions[], int[] grantResults) {
+                                           @NonNull String permissions[], @NonNull int[] grantResults) {
 
         if (requestCode == MY_PERMISSIONS_REQUEST_READ_EXTERNAL_STORAGE) {
 
             // If request is cancelled, the result arrays are empty.
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 onStoragePermissionGranted();
-            } else {
-
             }
-            return;
         } else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
         }
     }
 
@@ -394,8 +390,6 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
                     Thread.sleep(300);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
-                } catch (Exception e) {
-                    e.printStackTrace();
                 }
                 if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
                     publishProgress(mMediaPlayer.getCurrentPosition());
@@ -408,10 +402,10 @@ public class MainActivity extends AppCompatActivity implements ListOfSongFragmen
         protected void onProgressUpdate(Integer... progress) {
             if (mMediaPlayer != null && mMediaPlayer.isPlaying()) {
                 // Update the view
-                SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss");
+                SimpleDateFormat sdf = new SimpleDateFormat("hh:mm:ss", Locale.getDefault());
 
                 if (mMediaPlayer.getDuration() < 3600000) {
-                    sdf = new SimpleDateFormat("mm:ss");
+                    sdf = new SimpleDateFormat("mm:ss", Locale.getDefault());
                 }
 
                 int mediaPos_new = mMediaPlayer.getCurrentPosition();
